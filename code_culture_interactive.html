@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Culture Interactive Form</title>
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      overflow: hidden;
+      font-family: 'Space Grotesk', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: background 0.8s ease;
+      height: 100vh;
+      width: 100vw;
+      background: #000;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cursor-trail {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: currentColor;
+      pointer-events: none;
+      opacity: 0.3;
+      animation: fade-out 0.8s forwards;
+      z-index: 9999;
+    }
+
+    @keyframes fade-out {
+      to { opacity: 0; transform: scale(0); }
+    }
+
+    .screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1.5rem;
+      opacity: 0;
+      transition: all 0.8s ease;
+      transform: translateX(100%);
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      .screen {
+        padding: 3rem;
+      }
+    }
+    
+    .screen.active {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+    
+    .screen.exit-left { transform: translateX(-100%); opacity: 0; }
+    .screen.exit-right { transform: translateX(100%); opacity: 0; }
+    .screen.exit-up { transform: translateY(-100%); opacity: 0; }
+    .screen.exit-down { transform: translateY(100%); opacity: 0; }
+
+    .screen.layout-bottom {
+      justify-content: flex-end;
+    }
+
+    .screen.layout-center {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .screen.layout-top-bottom {
+      justify-content: space-between;
+    }
+
+    .question-text {
+      font-size: clamp(1.3rem, 5vw, 3rem);
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+      max-width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (min-width: 768px) {
+      .question-text {
+        margin-bottom: 2rem;
+        max-width: 90%;
+      }
+    }
+
+    .layout-center .question-text {
+      text-align: center;
+      max-width: 700px;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+      max-width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (min-width: 640px) {
+      .input-row {
+        flex-direction: row;
+        align-items: center;
+        max-width: 700px;
+      }
+    }
+
+    .layout-center .input-row {
+      width: 100%;
+      justify-content: center;
+    }
+
+    input {
+      flex: 1;
+      padding: 1rem 0;
+      font-size: clamp(0.95rem, 3vw, 1.3rem);
+      font-family: inherit;
+      border: none;
+      border-bottom: 3px solid currentColor;
+      background: transparent;
+      color: inherit;
+      outline: none;
+      transition: all 0.3s ease;
+      min-width: 0;
+    }
+
+    input::placeholder {
+      color: inherit;
+      opacity: 0.5;
+    }
+
+    input:focus {
+      border-bottom-width: 5px;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+      font-weight: 700;
+      border: 3px solid currentColor;
+      background: transparent;
+      color: inherit;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    @media (min-width: 640px) {
+      .btn {
+        width: auto;
+        padding: 1rem 2.5rem;
+      }
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: currentColor;
+      transition: left 0.3s ease;
+      z-index: -1;
+    }
+
+    .btn:hover::before {
+      left: 0;
+    }
+
+    .btn:hover {
+      color: #000;
+      transform: scale(1.05);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      max-width: 100%;
+      margin: 1.5rem 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (min-width: 480px) {
+      .options-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .options-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        max-width: 800px;
+        margin: 2rem 0;
+      }
+    }
+
+    .option-btn {
+      padding: 1.2rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 3px solid currentColor;
+      background: rgba(255,255,255,0.05);
+      color: inherit;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    @media (min-width: 768px) {
+      .option-btn {
+        padding: 1.5rem;
+        font-size: 1rem;
+      }
+    }
+
+    .option-btn:hover {
+      background: rgba(255,255,255,0.15);
+      transform: translateY(-5px);
+    }
+
+    .option-btn.selected {
+      background: currentColor;
+      color: #000;
+    }
+
+    .progress {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0.7;
+      z-index: 10;
+    }
+
+    @media (min-width: 768px) {
+      .progress {
+        top: 2rem;
+        right: 2rem;
+        font-size: 1rem;
+      }
+    }
+
+    .svg-decoration {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.1;
+      z-index: 1;
+    }
+
+    #bouncing-ball {
+      width: 200px;
+      height: 200px;
+      margin: 1.5rem auto;
+    }
+
+    @media (min-width: 768px) {
+      #bouncing-ball {
+        width: 300px;
+        height: 300px;
+        margin: 2rem auto;
+      }
+    }
+
+    .ball {
+      animation: bounce 1s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0) scaleY(1); }
+      50% { transform: translateY(-80px) scaleY(1.1); }
+      90% { transform: translateY(0) scaleY(0.9); }
+    }
+
+    .results {
+      max-width: 900px;
+      overflow-y: auto;
+      max-height: 85vh;
+      padding-bottom: 2rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .result-header {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 900;
+      margin-bottom: 2rem;
+      background: linear-gradient(45deg, currentColor, rgba(255,255,255,0.6));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .personality-result {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800;
+      padding: 2rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      margin: 2rem 0;
+      border: 3px solid currentColor;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .answer-block {
+      background: rgba(255,255,255,0.05);
+      padding: 1.5rem;
+      border-radius: 15px;
+      margin-bottom: 1rem;
+      border-left: 5px solid currentColor;
+      backdrop-filter: blur(5px);
+    }
+
+    .answer-q {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.9;
+    }
+
+    .answer-a {
+      font-size: 1rem;
+      line-height: 1.6;
+      opacity: 0.8;
+    }
+
+    #profile-output {
+        border-radius: 10px;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        min-height: 100px;
+        text-align: left;
+        display: none;
+        white-space: pre-wrap;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .wave-svg {
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      animation: wave 8s ease-in-out infinite;
+    }
+
+    .particles {
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div id="form-container"></div>
+
+  <script>
+    const colors = ["#17072b", "#172d67", "#22ddd2", "#2e73ea", "#8c15e9"];
+    let currentBg = colors[0];
+    let sessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+    const questions = [
+      { 
+        q: "What do you define as a creative?", 
+        type: "input",
+        layout: "bottom",
+        placeholder: "Type your answer...",
+        decoration: "particles"
+      },
+      { 
+        q: "What's your go-to creative tool?", 
+        type: "options",
+        layout: "center",
+        options: ["Figma", "Adobe Suite", "Pen & Paper", "Code Editor", "Procreate", "Blender"],
+        decoration: "grid"
+      },
+      { 
+        q: "What do you define as a techy?", 
+        type: "input",
+        layout: "top-bottom",
+        placeholder: "Type your answer...",
+        decoration: "wave"
+      },
+      { 
+        q: "Pick your superpower", 
+        type: "options",
+        layout: "center",
+        options: ["Debug anything", "Design anything", "Learn anything", "Build anything"],
+        decoration: "particles"
+      },
+      { 
+        q: "Imagine a ball bouncing — what's the first thing you'd change?", 
+        type: "input",
+        layout: "center",
+        placeholder: "I'd change...",
+        showBall: true,
+        decoration: "none"
+      },
+      { 
+        q: "How do you prefer to work?", 
+        type: "options",
+        layout: "bottom",
+        options: ["Solo deep focus", "Collaborative chaos", "Structured sprints", "Flow state freestyle"],
+        decoration: "wave"
+      },
+      { 
+        q: "Are you a techy or a creative?", 
+        type: "input",
+        layout: "center",
+        placeholder: "I am...",
+        decoration: "particles"
+      },
+      { 
+        q: "What's your email?", 
+        type: "email",
+        layout: "bottom",
+        placeholder: "your@email.com",
+        decoration: "wave"
+      }
+    ];
+
+    const container = document.getElementById("form-container");
+    let index = 0;
+    let answers = [];
+    let currentInput;
+    let selectedOption = null;
+
+    // --- GEMINI API CONFIGURATION ---
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=';
+    // Use __api_key if it exists, otherwise fall back to empty string
+    const API_KEY = typeof __api_key !== 'undefined' ? __api_key : ""; 
+    // ----------------------------------
+
+    // Mouse trail effect
+    let lastTrailTime = 0;
+    document.addEventListener('mousemove', (e) => {
+      const now = Date.now();
+      if (now - lastTrailTime > 50) {
+        createTrail(e.clientX, e.clientY);
+        lastTrailTime = now;
+      }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      createTrail(touch.clientX, touch.clientY);
+    });
+
+    function createTrail(x, y) {
+      const trail = document.createElement('div');
+      trail.className = 'cursor-trail';
+      trail.style.left = x + 'px';
+      trail.style.top = y + 'px';
+      trail.style.color = currentBg;
+      document.body.appendChild(trail);
+      setTimeout(() => trail.remove(), 800);
+    }
+
+    function getContrastColor(hex) {
+      hex = hex.replace("#", "");
+      const r = parseInt(hex.substr(0,2),16);
+      const g = parseInt(hex.substr(2,2),16);
+      const b = parseInt(hex.substr(4,2),16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness > 150 ? "#000" : "#fff";
+    }
+
+    function createDecoration(type, color) {
+      if (type === "wave") {
+        return `<svg class="svg-decoration wave-svg" viewBox="0 0 1440 320">
+          <path fill="${color}" fill-opacity="0.3" d="M0,160L48,144C96,128,192,96,288,90.7C384,85,480,107,576,128C672,149,768,171,864,165.3C960,160,1056,128,1152,122.7C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>`;
+      } else if (type === "particles") {
+        let particles = '<svg class="svg-decoration particles" viewBox="0 0 200 200">';
+        for (let i = 0; i < 20; i++) {
+          const x = Math.random() * 200;
+          const y = Math.random() * 200;
+          const r = Math.random() * 3 + 1;
+          particles += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.4"/>`;
+        }
+        particles += '</svg>';
+        return particles;
+      } else if (type === "grid") {
+        return `<svg class="svg-decoration" style="top:0;left:0;width:100%;height:100%;" viewBox="0 0 100 100">
+          <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="${color}" stroke-width="0.5" opacity="0.2"/>
+          </pattern></defs>
+          <rect width="100" height="100" fill="url(#grid)" />
+        </svg>`;
+      }
+      return "";
+    }
+
+    function showScreen(i) {
+      if (i >= questions.length) {
+        // Show results
+        const bg = colors[Math.floor(Math.random() * colors.length)];
+        const textColor = getContrastColor(bg);
+        currentBg = bg;
+        document.body.style.background = bg;
+
+        const screen = document.createElement("div");
+        screen.className = "screen active layout-center";
+        screen.style.color = textColor;
+        
+        showResults(screen, textColor, bg);
+        container.innerHTML = "";
+        container.appendChild(screen);
+        return;
+      }
+
+      const bg = colors[Math.floor(Math.random() * colors.length)];
+      const textColor = getContrastColor(bg);
+      currentBg = bg;
+      document.body.style.background = bg;
+
+      const screen = document.createElement("div");
+      screen.className = `screen active layout-${questions[i].layout}`;
+      screen.style.color = textColor;
+        const progress = document.createElement("div");
+        progress.className = "progress";
+        progress.textContent = `${i + 1}/${questions.length}`;
+        screen.appendChild(progress);
+
+        // Add decoration
+        if (questions[i].decoration !== "none") {
+          screen.innerHTML += createDecoration(questions[i].decoration, textColor);
+        }
+
+        const questionText = document.createElement("div");
+        questionText.className = "question-text";
+        questionText.textContent = questions[i].q;
+        screen.appendChild(questionText);
+
+        if (questions[i].showBall) {
+          const ballSvg = document.createElement("div");
+          ballSvg.innerHTML = `
+            <svg id="bouncing-ball" viewBox="0 0 100 100">
+              <circle class="ball" cx="50" cy="70" r="15" fill="${textColor}"/>
+              <line x1="0" y1="90" x2="100" y2="90" stroke="${textColor}" stroke-width="2" opacity="0.3"/>
+            </svg>
+          `;
+          screen.appendChild(ballSvg);
+        }
+
+        if (questions[i].type === "options") {
+          const optionsGrid = document.createElement("div");
+          optionsGrid.className = "options-grid";
+          
+          questions[i].options.forEach(option => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.textContent = option;
+            btn.style.borderColor = textColor;
+            btn.style.color = textColor;
+            btn.onclick = () => {
+              document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+              selectedOption = option;
+              setTimeout(() => handleNext(), 300);
+            };
+            optionsGrid.appendChild(btn);
+          });
+          
+          screen.appendChild(optionsGrid);
+        } else {
+          const inputRow = document.createElement("div");
+          inputRow.className = "input-row";
+
+          const inputEl = document.createElement("input");
+          inputEl.type = questions[i].type === "email" ? "email" : "text";
+          inputEl.placeholder = questions[i].placeholder;
+          inputEl.style.color = textColor;
+          inputEl.style.borderColor = textColor;
+          if (answers[i]) inputEl.value = answers[i];
+          inputRow.appendChild(inputEl);
+
+          const btn = document.createElement("button");
+          btn.className = "btn";
+          btn.textContent = i === questions.length - 1 ? "Results" : "Next";
+          btn.style.borderColor = textColor;
+          btn.style.color = textColor;
+          btn.onclick = handleNext;
+          inputRow.appendChild(btn);
+
+          screen.appendChild(inputRow);
+          currentInput = inputEl;
+
+          inputEl.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleNext();
+            }
+          });
+
+          setTimeout(() => inputEl.focus(), 100);
+        }
+
+      container.innerHTML = "";
+      container.appendChild(screen);
+    }
+
+    function handleNext() {
+      if (questions[index].type === "options") {
+        if (selectedOption) {
+          answers[index] = selectedOption;
+          selectedOption = null;
+          transitionScreen();
+        }
+      } else {
+        if (currentInput && currentInput.value.trim()) {
+          answers[index] = currentInput.value.trim();
+          transitionScreen();
+        } else {
+          currentInput.style.animation = "shake 0.5s";
+          setTimeout(() => currentInput.style.animation = "", 500);
+        }
+      }
+    }
+
+    function transitionScreen() {
+      const directions = ["left", "right", "up", "down"];
+      const exitDir = directions[Math.floor(Math.random() * directions.length)];
+      const active = document.querySelector(".screen.active");
+      
+      if (active) {
+        active.classList.remove("active");
+        active.classList.add(`exit-${exitDir}`);
+        setTimeout(() => {
+          index++;
+          showScreen(index);
+        }, 600);
+      }
+    }
+
+    function showResults(screen, textColor, bg) {
+      screen.innerHTML += createDecoration("particles", textColor);
+      
+      const resultsDiv = document.createElement("div");
+      resultsDiv.className = "results";
+      resultsDiv.style.color = textColor;
+      resultsDiv.style.textAlign = "center";
+      resultsDiv.style.display = "flex";
+      resultsDiv.style.flexDirection = "column";
+      resultsDiv.style.justifyContent = "center";
+      resultsDiv.style.alignItems = "center";
+      resultsDiv.style.height = "100%";
+
+      const thankYouIcon = document.createElement("div");
+      thankYouIcon.style.fontSize = "4rem";
+      thankYouIcon.style.marginBottom = "2rem";
+      thankYouIcon.textContent = "🎉";
+      resultsDiv.appendChild(thankYouIcon);
+
+      const header = document.createElement("div");
+      header.className = "result-header";
+      header.textContent = "Results & Analysis";
+      resultsDiv.appendChild(header);
+
+      const message = document.createElement("div");
+      message.style.fontSize = "clamp(1.2rem, 3vw, 1.8rem)";
+      message.style.marginBottom = "2rem";
+      message.style.lineHeight = "1.6";
+      message.style.maxWidth = "600px";
+      message.style.opacity = "0.9";
+      message.textContent = "Your core responses have been recorded via the webhook. Now, let's generate your custom Code Culture Profile!";
+      resultsDiv.appendChild(message);
+
+      // Calculate personality for storage
+      const lastAnswer = answers[answers.length - 2].toLowerCase(); // -2 because last is email
+      let personality = "Creative-Techy Hybrid 🎨💻";
+      if (lastAnswer.includes("creative") && !lastAnswer.includes("techy")) {
+        personality = "Pure Creative 🎨";
+      } else if (lastAnswer.includes("techy") && !lastAnswer.includes("creative")) {
+        personality = "Pure Techy 💻";
+      } else if (lastAnswer.includes("both") || lastAnswer.includes("hybrid")) {
+        personality = "Creative-Techy Hybrid 🎨💻";
+      }
+      
+      // Save data (now using the provided Google Apps Script webhook)
+      saveResponses(personality);
+
+      // --- LLM GENERATION SECTION ---
+      
+      const analysisContainer = document.createElement("div");
+      analysisContainer.style.maxWidth = "700px";
+      analysisContainer.style.width = "100%";
+      analysisContainer.style.marginBottom = "2rem";
+      resultsDiv.appendChild(analysisContainer);
+
+      const llmButton = document.createElement("button");
+      llmButton.id = "generate-btn";
+      llmButton.className = "btn";
+      llmButton.innerHTML = "✨ Generate My Code Culture Profile";
+      llmButton.style.marginTop = "1rem";
+      analysisContainer.appendChild(llmButton);
+      
+      const profileOutput = document.createElement("div");
+      profileOutput.id = "profile-output";
+      profileOutput.style.marginTop = "2rem";
+      profileOutput.style.color = textColor;
+      profileOutput.style.background = `rgba(255, 255, 255, 0.1)`;
+      profileOutput.style.borderColor = textColor;
+      profileOutput.style.display = "none"; // Initially hidden
+      
+      analysisContainer.appendChild(profileOutput);
+
+      llmButton.onclick = () => {
+        llmButton.disabled = true;
+        llmButton.textContent = "Analyzing... Hang Tight!";
+        profileOutput.style.display = 'block';
+        profileOutput.innerHTML = '<p style="text-align: center;">Analyzing your answers... please wait...</p>';
+        generateCodeCultureProfile(personality, answers, questions, profileOutput, llmButton);
+      };
+      
+      // --- END LLM GENERATION SECTION ---
+
+      const restartBtn = document.createElement("button");
+      restartBtn.className = "btn";
+      restartBtn.textContent = "Take Survey Again";
+      restartBtn.style.borderColor = textColor;
+      restartBtn.style.color = textColor;
+      restartBtn.style.marginTop = "2rem";
+      restartBtn.onclick = () => {
+        index = 0;
+        answers = [];
+        sessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        transitionScreen();
+      };
+      resultsDiv.appendChild(restartBtn);
+
+      screen.appendChild(resultsDiv);
+    }
+
+    async function saveResponses(personality) {
+      try {
+        // --- NOTE: This URL is for your Google Apps Script webhook ---
+        // It has been updated to the latest URL you provided:
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxX7eAKpf_yU7hpAzT54Fq50koz6iiI_r4Cm-7D3mWmfopurulU15ZdK5FRgwfTn1A/exec'; 
+
+        const responseData = {
+          sessionId: sessionId,
+          timestamp: new Date().toISOString(),
+          personality: personality,
+          email: answers[answers.length - 1], // Last answer is email
+          answers: {}
+        };
+        
+        // Structure the answers object
+        questions.forEach((q, idx) => {
+          if (idx < questions.length - 1) { // Exclude email question from answers object
+            responseData.answers[`q${idx + 1}`] = {
+              question: q.q,
+              answer: answers[idx]
+            };
+          }
+        });
+
+        // 2. Perform the fetch request to the webhook
+        // Added mode: 'no-cors' to prevent the browser from blocking the request due to CORS policy
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          mode: 'no-cors', // Critical for Apps Script webhooks to avoid preflight errors
+          body: JSON.stringify(responseData)
+        });
+        
+        // 3. Log the attempt. The response status check is unreliable in 'no-cors' mode.
+        console.log('Attempted to send response to Google Apps Script. Check Sheet for confirmation.');
+        
+        console.log('Response data payload:', responseData);
+
+      } catch (error) {
+        console.error('Error saving response (network issue or CORS):', error);
+      }
+    }
+
+    /**
+     * Helper function to call the Gemini API with exponential backoff.
+     */
+    async function fetchGemini(payload, maxRetries = 5, delay = 1000) {
+        // Use the API_KEY defined above, which uses the __api_key global variable.
+        const key = API_KEY;
+        if (!key) {
+            throw new Error("Gemini API key is missing. Cannot generate profile.");
+        }
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(GEMINI_API_URL + key, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    return await response.json();
+                }
+
+                // If not OK, but we can retry (e.g., rate limiting 429)
+                if (response.status === 429 || response.status >= 500) {
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                    continue; // Retry
+                }
+
+                // For other errors, throw immediately (e.g., 403 Forbidden)
+                throw new Error(`API returned status code ${response.status}. Check API key and quota.`);
+
+            } catch (error) {
+                if (i === maxRetries - 1) throw error; // Re-throw on last attempt
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+            }
+        }
+        throw new Error("Failed to connect to Gemini API after multiple retries.");
+    }
+
+    /**
+     * Uses the Gemini API to analyze survey answers and generate a profile.
+     */
+    async function generateCodeCultureProfile(personality, answers, questions, outputElement, buttonElement) {
+        let prompt = `Analyze the following 7 responses from a user who completed a Code Culture survey. Based on their input, generate a concise, creative Code Culture Profile. The profile MUST start with a bold, unique title and then contain a brief (2-3 paragraph) analysis of their strengths, preferred work environment, and how they bridge the 'techy' vs 'creative' divide.
+
+        User's Self-Identified Type (Q7): ${personality}
+
+        --- Survey Responses ---
+        Q1: ${questions[0].q} -> Answer: ${answers[0]}
+        Q2: ${questions[1].q} -> Answer: ${answers[1]}
+        Q3: ${questions[2].q} -> Answer: ${answers[2]}
+        Q4: ${questions[3].q} -> Answer: ${answers[3]}
+        Q5: ${questions[4].q} -> Answer: ${answers[4]}
+        Q6: ${questions[5].q} -> Answer: ${answers[5]}
+        -----------------------
+
+        Format the output clearly using **markdown bolding** for the title and key points, and use line breaks for readability. Do not include the original questions or answers in the final profile.`;
+
+        const systemPrompt = "You are a 'Code Culture Analyst', a thoughtful AI specializing in identifying and describing professional personas at the intersection of technology and creativity. Your goal is to provide insightful, non-judgmental, and engaging personality profiles.";
+
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+
+        try {
+            const result = await fetchGemini(payload);
+            const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Analysis failed to generate a response.";
+            
+            // Format markdown for HTML display (simple replacement)
+            const htmlContent = generatedText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+                .replace(/\n/g, '<br>'); // New lines
+
+            outputElement.innerHTML = htmlContent;
+            buttonElement.innerHTML = '✨ Profile Generated!';
+        } catch (error) {
+            outputElement.innerHTML = `<p style="color: red; text-align: center;">Error: Could not generate profile. ${error.message}</p>`;
+            buttonElement.innerHTML = '✨ Retry Profile Generation';
+            buttonElement.disabled = false;
+        }
+    }
+
+    showScreen(index);
+  </script>
+</body>
+</html>
