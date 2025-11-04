@@ -1061,15 +1061,7 @@
         llmButton.innerHTML = "✨ Generate My Code Culture Profile";
         llmButton.style.marginTop = "1rem";
         analysisContainer.appendChild(llmButton);
-        
-        const apiBanner = document.createElement("div");
-        apiBanner.id = "api-fix-banner";
-        apiBanner.className = "api-error-banner";
-        apiBanner.style.color = textColor;
-        apiBanner.innerHTML = `
-            ⚠️ <strong>API Key Missing:</strong> Please add your Gemini API key to the CONFIG.API_KEY constant at the top of the script (line 22). Get a free key at <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: #22ddd2;">Google AI Studio</a>.
-        `;
-        analysisContainer.appendChild(apiBanner);
+      
 
         const profileOutput = document.createElement("div");
         profileOutput.id = "profile-output";
