@@ -12,7 +12,7 @@
     }
     
     body {
-      overflow: hidden;
+      overflow: hidden; /* Hide main body scrollbar */
       font-family: 'Space Grotesk', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
       transition: background 0.8s ease;
       height: 100vh;
@@ -20,6 +20,15 @@
       background: #000;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Scrollbar aesthetics for the results page only (webkit specific) */
+    .screen::-webkit-scrollbar {
+        width: 0.5rem;
+    }
+    .screen::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
     }
 
     .cursor-trail {
@@ -48,7 +57,8 @@
       opacity: 0;
       transition: all 0.8s ease;
       transform: translateX(100%);
-      overflow: hidden;
+      overflow-y: auto; /* Allows content on screen to scroll if needed */
+      overflow-x: hidden;
     }
 
     @media (min-width: 768px) {
@@ -74,10 +84,18 @@
     .screen.layout-center {
       justify-content: center;
       align-items: center;
+      text-align: center;
     }
 
     .screen.layout-top-bottom {
       justify-content: space-between;
+    }
+    
+    .intro-text {
+        font-size: clamp(1rem, 3vw, 1.5rem);
+        line-height: 1.5;
+        margin-bottom: 2rem;
+        max-width: 700px;
     }
 
     .question-text {
@@ -138,14 +156,57 @@
       transition: all 0.3s ease;
       min-width: 0;
     }
+    
+    /* Input and Textarea Styling */
+    .input-row input[type="text"], 
+    .input-row input[type="email"], 
+    .input-row textarea {
+        flex: 1;
+        padding: 1rem 0; /* Match single-line padding */
+        font-size: clamp(0.95rem, 3vw, 1.3rem);
+        font-family: inherit;
+        background: transparent;
+        color: inherit;
+        outline: none;
+        transition: all 0.3s ease;
+        min-width: 0;
+    }
 
-    input::placeholder {
+    .input-row textarea {
+        padding: 1rem;
+        border: none;
+        border-bottom: 3px solid currentColor; /* Use same bottom border style */
+        min-height: 3em; /* Minimal height, allows natural growth */
+        resize: none; /* Prevent manual resize */
+        overflow-y: hidden; /* Hide scrollbar, let content push element height */
+    }
+
+    .input-row input[type="text"]:focus, 
+    .input-row input[type="email"]:focus, 
+    .input-row textarea:focus {
+      border-bottom-width: 5px;
+      border-color: #22ddd2; /* Subtle focus color change */
+      box-shadow: none;
+    }
+
+
+    input::placeholder, .input-row textarea::placeholder {
       color: inherit;
       opacity: 0.5;
     }
 
-    input:focus {
-      border-bottom-width: 5px;
+    /* Button Group for Navigation */
+    .nav-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        max-width: 100%;
+    }
+
+    @media (min-width: 640px) {
+        .nav-buttons {
+            max-width: 400px;
+        }
     }
 
     .btn {
@@ -163,12 +224,37 @@
       white-space: nowrap;
       position: relative;
       overflow: hidden;
-      width: 100%;
+      flex: 1; /* Make both next/back buttons take equal space */
     }
+    
+    /* Notification message for invalid input */
+    .validation-message {
+        color: #ff3860;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        text-align: center;
+        position: absolute;
+        bottom: -2rem;
+        width: 100%;
+    }
+
+    /* Back button specific styling */
+    #back-btn {
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+    }
+    #back-btn:hover {
+        opacity: 1;
+        background: rgba(255,255,255,0.1);
+        transform: scale(1.02);
+    }
+    #back-btn::before {
+        content: none !important; /* Remove hover background fill */
+    }
+
 
     @media (min-width: 640px) {
       .btn {
-        width: auto;
         padding: 1rem 2.5rem;
       }
     }
@@ -192,6 +278,10 @@
     .btn:hover {
       color: #000;
       transform: scale(1.05);
+    }
+    
+    #back-btn:hover {
+        color: inherit !important;
     }
 
     .btn:active {
@@ -398,509 +488,696 @@
   <div id="form-container"></div>
 
   <script>
-    const colors = ["#17072b", "#172d67", "#22ddd2", "#2e73ea", "#8c15e9"];
-    let currentBg = colors[0];
-    let sessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    (function() {
+      // =======================================================
+      // 1. CONFIGURATION
+      // =======================================================
+      const CONFIG = {
+        COLORS: ["#17072b", "#172d67", "#22ddd2", "#2e73ea", "#8c15e9"],
+        WEBHOOK_URL: 'https://script.google.com/macros/s/AKfycbxX7eAKpf_yU7hpAzT54Fq50koz6iiI_r4Cm-7D3mWmfopurulU15ZdK5FRgwfTn1A/exec',
+        GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=',
+        API_KEY: typeof __api_key !== 'undefined' ? __api_key : "", 
+        QUESTIONS: [
+          // Index 0: Q1. Identity (Input)
+          { q: "What is your name?", qIndex: 1, type: "input", inputType: "text", layout: "bottom", placeholder: "e.g., Jane Doe", decoration: "particles" },
 
-    const questions = [
-      { 
-        q: "What do you define as a creative?", 
-        type: "input",
-        layout: "bottom",
-        placeholder: "Type your answer...",
-        decoration: "particles"
-      },
-      { 
-        q: "What's your go-to creative tool?", 
-        type: "options",
-        layout: "center",
-        options: ["Figma", "Adobe Suite", "Pen & Paper", "Code Editor", "Procreate", "Blender"],
-        decoration: "grid"
-      },
-      { 
-        q: "What do you define as a techy?", 
-        type: "input",
-        layout: "top-bottom",
-        placeholder: "Type your answer...",
-        decoration: "wave"
-      },
-      { 
-        q: "Pick your superpower", 
-        type: "options",
-        layout: "center",
-        options: ["Debug anything", "Design anything", "Learn anything", "Build anything"],
-        decoration: "particles"
-      },
-      { 
-        q: "Imagine a ball bouncing — what's the first thing you'd change?", 
-        type: "input",
-        layout: "center",
-        placeholder: "I'd change...",
-        showBall: true,
-        decoration: "none"
-      },
-      { 
-        q: "How do you prefer to work?", 
-        type: "options",
-        layout: "bottom",
-        options: ["Solo deep focus", "Collaborative chaos", "Structured sprints", "Flow state freestyle"],
-        decoration: "wave"
-      },
-      { 
-        q: "Are you a techy or a creative?", 
-        type: "input",
-        layout: "center",
-        placeholder: "I am...",
-        decoration: "particles"
-      },
-      { 
-        q: "What's your email?", 
-        type: "email",
-        layout: "bottom",
-        placeholder: "your@email.com",
-        decoration: "wave"
+          // Index 1: Welcome/Introduction Screen (After name is captured)
+          { q: "Welcome", type: "intro", layout: "center", decoration: "particles" },
+          
+          // Index 2: Q2. Core Concepts
+          { q: "What do you define as a creative?", qIndex: 2, type: "input", inputType: "textarea", layout: "top-bottom", placeholder: "Express your understanding of creativity...", decoration: "wave" },
+          
+          // Index 3: Q3. Core Concepts (Was Q4)
+          { q: "What would make a person tech-based in your opinion?", qIndex: 3, type: "input", inputType: "textarea", layout: "top-bottom", placeholder: "What qualities define a 'techy' person?", decoration: "particles" },
+          
+          // Index 4: Q4. Process & Impulse (Was Q5)
+          { q: "When you see a new idea, what's your first instinct?", qIndex: 4, type: "options", layout: "center", options: ["How does it work?", "What does it mean?", "How could it be better?"], decoration: "grid" },
+          
+          // Index 5: Q5. Process & Impulse (Was Q6)
+          { q: "What is your primary medium of work?", qIndex: 5, type: "input", inputType: "text", layout: "bottom", placeholder: "e.g., Code (VS Code), Design (Figma), Words (Markdown), Visuals (Canva)", decoration: "particles" },
+          
+          // Index 6: Q6. Preference & Reflection (Was Q8)
+          { q: "How do you prefer to work?", qIndex: 6, type: "options", layout: "bottom", options: ["Solo deep focus", "Collaborative chaos", "Structured sprints", "Flow state freestyle"], decoration: "wave" },
+          
+          // Index 7: Q7. Preference & Reflection (Was Q9)
+          { q: "Imagine a ball bouncing — what's the first thing you'd change?", qIndex: 7, type: "input", inputType: "text", layout: "center", placeholder: "I'd change the...", showBall: true, decoration: "none" },
+          
+          // Index 8: Q8. Preference & Reflection (Was Q10)
+          { q: "Do you enjoy brainstorming ideas or executing them more?", qIndex: 8, type: "options", layout: "center", options: ["Brainstorming ideas (Planning)", "Executing them (Doing)"], decoration: "wave" },
+          
+          // Index 9: Q9. Final Reflection (Was Q11)
+          { q: "If you could create anything without limitation, what would it be?", qIndex: 9, type: "input", inputType: "textarea", layout: "top-bottom", placeholder: "Describe your ideal project...", decoration: "grid" },
+          
+          // Index 10: Q10. Outcome & Contact (Was Q12)
+          { q: "Based on your answers, would you call yourself:", qIndex: 10, type: "options", layout: "center", options: ["A Creative", "A Tech Person", "A Blend of Both", "Still Exploring"], decoration: "particles" },
+          
+          // Index 11: Email (Was Q13)
+          { q: "What is your email?", qIndex: 11, type: "email", inputType: "email", layout: "bottom", placeholder: "your@email.com", decoration: "wave" }
+        ],
+      };
+
+      // The actual question count (for the progress bar) is 10 (Q1-Q10).
+      const ACTUAL_QUESTION_COUNT = 10; 
+
+      // =======================================================
+      // 2. STATE MANAGEMENT
+      // =======================================================
+      const state = {
+        container: document.getElementById("form-container"),
+        index: 0,
+        answers: [], // Stores all answers including Q1 (name)
+        selectedOption: null,
+        currentInput: null,
+        currentBg: CONFIG.COLORS[0],
+        sessionId: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        lastTrailTime: 0,
+      };
+
+      // =======================================================
+      // 3. UTILITY FUNCTIONS
+      // =======================================================
+
+      function getContrastColor(hex) {
+        hex = hex.replace("#", "");
+        const r = parseInt(hex.substr(0,2),16);
+        const g = parseInt(hex.substr(2,2),16);
+        const b = parseInt(hex.substr(4,2),16);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness > 150 ? "#000" : "#fff";
       }
-    ];
 
-    const container = document.getElementById("form-container");
-    let index = 0;
-    let answers = [];
-    let currentInput;
-    let selectedOption = null;
-
-    // --- GEMINI API CONFIGURATION ---
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=';
-    // Use __api_key if it exists, otherwise fall back to empty string
-    const API_KEY = typeof __api_key !== 'undefined' ? __api_key : ""; 
-    // ----------------------------------
-
-    // Mouse trail effect
-    let lastTrailTime = 0;
-    document.addEventListener('mousemove', (e) => {
-      const now = Date.now();
-      if (now - lastTrailTime > 50) {
-        createTrail(e.clientX, e.clientY);
-        lastTrailTime = now;
-      }
-    });
-
-    document.addEventListener('touchmove', (e) => {
-      const touch = e.touches[0];
-      createTrail(touch.clientX, touch.clientY);
-    });
-
-    function createTrail(x, y) {
-      const trail = document.createElement('div');
-      trail.className = 'cursor-trail';
-      trail.style.left = x + 'px';
-      trail.style.top = y + 'px';
-      trail.style.color = currentBg;
-      document.body.appendChild(trail);
-      setTimeout(() => trail.remove(), 800);
-    }
-
-    function getContrastColor(hex) {
-      hex = hex.replace("#", "");
-      const r = parseInt(hex.substr(0,2),16);
-      const g = parseInt(hex.substr(2,2),16);
-      const b = parseInt(hex.substr(4,2),16);
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-      return brightness > 150 ? "#000" : "#fff";
-    }
-
-    function createDecoration(type, color) {
-      if (type === "wave") {
-        return `<svg class="svg-decoration wave-svg" viewBox="0 0 1440 320">
-          <path fill="${color}" fill-opacity="0.3" d="M0,160L48,144C96,128,192,96,288,90.7C384,85,480,107,576,128C672,149,768,171,864,165.3C960,160,1056,128,1152,122.7C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-        </svg>`;
-      } else if (type === "particles") {
-        let particles = '<svg class="svg-decoration particles" viewBox="0 0 200 200">';
-        for (let i = 0; i < 20; i++) {
-          const x = Math.random() * 200;
-          const y = Math.random() * 200;
-          const r = Math.random() * 3 + 1;
-          particles += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.4"/>`;
+      function createTrail(x, y) {
+        const now = Date.now();
+        if (now - state.lastTrailTime > 50) {
+          const trail = document.createElement('div');
+          trail.className = 'cursor-trail';
+          trail.style.left = x + 'px';
+          trail.style.top = y + 'px';
+          trail.style.color = state.currentBg;
+          document.body.appendChild(trail);
+          setTimeout(() => trail.remove(), 800);
+          state.lastTrailTime = now;
         }
-        particles += '</svg>';
-        return particles;
-      } else if (type === "grid") {
-        return `<svg class="svg-decoration" style="top:0;left:0;width:100%;height:100%;" viewBox="0 0 100 100">
-          <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="${color}" stroke-width="0.5" opacity="0.2"/>
-          </pattern></defs>
-          <rect width="100" height="100" fill="url(#grid)" />
-        </svg>`;
       }
-      return "";
-    }
 
-    function showScreen(i) {
-      if (i >= questions.length) {
-        // Show results
-        const bg = colors[Math.floor(Math.random() * colors.length)];
+      function createDecoration(type, color) {
+        if (type === "wave") {
+          return `<svg class="svg-decoration wave-svg" viewBox="0 0 1440 320">
+            <path fill="${color}" fill-opacity="0.3" d="M0,160L48,144C96,128,192,96,288,90.7C384,85,480,107,576,128C672,149,768,171,864,165.3C960,160,1056,128,1152,122.7C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>`;
+        } else if (type === "particles") {
+          let particles = '<svg class="svg-decoration particles" viewBox="0 0 200 200">';
+          for (let i = 0; i < 20; i++) {
+            const x = Math.random() * 200;
+            const y = Math.random() * 200;
+            const r = Math.random() * 3 + 1;
+            particles += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.4"/>`;
+          }
+          particles += '</svg>';
+          return particles;
+        } else if (type === "grid") {
+          return `<svg class="svg-decoration" style="top:0;left:0;width:100%;height:100%;" viewBox="0 0 100 100">
+            <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="${color}" stroke-width="0.5" opacity="0.2"/>
+            </pattern></defs>
+            <rect width="100" height="100" fill="url(#grid)" />
+          </svg>`;
+        }
+        return "";
+      }
+      
+      /**
+       * Simple regex to validate basic email format.
+       */
+      function isValidEmail(email) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(email);
+      }
+
+      // =======================================================
+      // 4. API HANDLERS (Webhook & Gemini)
+      // =======================================================
+
+      /**
+       * Sends survey responses to the Google Apps Script webhook.
+       */
+      async function saveResponses(personality) {
+        try {
+          // Get name from the answer to Q1 (index 0 in CONFIG.QUESTIONS)
+          const name = state.answers[0] || 'Guest';
+
+          const responseData = {
+            sessionId: state.sessionId,
+            timestamp: new Date().toISOString(),
+            name: name,
+            personality: personality,
+            email: state.answers[CONFIG.QUESTIONS.length - 1], // Last answer is email
+            answers: {}
+          };
+          
+          // Iterate over actual questions (index 0 through length - 2) excluding the intro screen (Index 1)
+          CONFIG.QUESTIONS.forEach((q, idx) => {
+            if (q.type !== 'intro' && idx < CONFIG.QUESTIONS.length - 1) { 
+                responseData.answers[`q${q.qIndex}`] = {
+                  question: q.q,
+                  answer: state.answers[idx]
+                };
+            }
+          });
+
+          // Use mode: 'no-cors' to bypass the CORS header issue, but suppresses response checks.
+          const response = await fetch(CONFIG.WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            mode: 'no-cors', 
+            body: JSON.stringify(responseData)
+          });
+          
+          console.log('Attempted to send response to Google Apps Script. Check Sheet for confirmation.');
+          console.log('Response data payload:', responseData);
+
+        } catch (error) {
+          console.error('Error saving response (network issue or CORS):', error);
+        }
+      }
+
+      /**
+       * Helper function to call the Gemini API with exponential backoff.
+       */
+      async function fetchGemini(payload, maxRetries = 5, delay = 1000) {
+          const key = CONFIG.API_KEY;
+          if (!key) {
+              // Throw custom error for display on the result screen
+              throw new Error("Gemini API key is missing. Cannot generate profile.");
+          }
+          for (let i = 0; i < maxRetries; i++) {
+              try {
+                  const response = await fetch(CONFIG.GEMINI_API_URL + key, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload)
+                  });
+
+                  if (response.ok) {
+                      return await response.json();
+                  }
+
+                  if (response.status === 429 || response.status >= 500) {
+                      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                      continue; 
+                  }
+
+                  throw new Error(`API returned status code ${response.status}. Check API key and quota.`);
+
+              } catch (error) {
+                  if (i === maxRetries - 1) throw error; 
+                  await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+              }
+          }
+          throw new Error("Failed to connect to Gemini API after multiple retries.");
+      }
+
+      /**
+       * Uses the Gemini API to analyze survey answers and generate a profile.
+       */
+      async function generateCodeCultureProfile(personality, outputElement, buttonElement) {
+          const name = state.answers[0] || 'Coder';
+          
+          // Collects answers only from Q2 up to Q10 (indices 2 through length - 3)
+          const surveyAnswers = CONFIG.QUESTIONS.slice(2, CONFIG.QUESTIONS.length - 2).map((q, idx) => {
+              // Index for answers is 2 + current slice index
+              const answerIndex = idx + 2; 
+              const answerText = state.answers[answerIndex];
+              return `Q${q.qIndex}: ${q.q} -> Answer: ${answerText}`;
+          }).join('\n');
+
+
+          let prompt = `Analyze the following ${ACTUAL_QUESTION_COUNT - 2} responses from a user named ${name} who completed a Code Culture survey. Based on their input, generate a concise, creative Code Culture Profile. The profile MUST start with a strong, unique title and then contain a brief (2-3 paragraph) analysis of their strengths, preferred work environment, and how they bridge the 'techy' vs 'creative' divide.
+
+          User's Self-Identified Type (Q${CONFIG.QUESTIONS[CONFIG.QUESTIONS.length - 2].qIndex}): ${personality}
+
+          --- Survey Responses ---
+          ${surveyAnswers}
+          -----------------------
+
+          Format the output clearly using standard text (no markdown formatting like asterisks or symbols) and use line breaks for readability. Do not include the original questions or answers in the final profile.`;
+
+          const systemPrompt = "You are a 'Code Culture Analyst', a thoughtful AI specializing in identifying and describing professional personas at the intersection of technology and creativity. Your goal is to provide insightful, non-judgemental, and engaging personality profiles. Respond using only standard text formatting, do not use markdown asterisks or symbols in your final output.";
+
+          const payload = {
+              contents: [{ parts: [{ text: prompt }] }],
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+          };
+
+          try {
+              const result = await fetchGemini(payload);
+              const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Analysis failed to generate a response.";
+              
+              outputElement.innerHTML = generatedText.replace(/\n/g, '<br>'); 
+
+              buttonElement.innerHTML = '✨ Profile Generated!';
+          } catch (error) {
+              outputElement.innerHTML = `<p style="color: red; text-align: center;">Error: Could not generate profile. ${error.message}</p>`;
+              buttonElement.innerHTML = '✨ Retry Profile Generation';
+              buttonElement.disabled = false;
+          }
+      }
+
+      // =======================================================
+      // 5. UI / NAVIGATION
+      // =======================================================
+
+      function displayValidationMessage(message) {
+          const inputRow = document.querySelector('.input-row');
+          let msgEl = document.getElementById('validation-msg');
+          if (!msgEl) {
+              msgEl = document.createElement('div');
+              msgEl.id = 'validation-msg';
+              msgEl.className = 'validation-message';
+              inputRow.appendChild(msgEl);
+          }
+          msgEl.textContent = message;
+          setTimeout(() => {
+              if (msgEl) msgEl.textContent = '';
+          }, 3000);
+      }
+
+      function handleNext() {
+        const currentQ = CONFIG.QUESTIONS[state.index];
+        let inputEl = document.querySelector('input[type="text"], input[type="email"], textarea');
+        
+        // Handle Intro screen
+        if (currentQ.type === "intro") {
+            transitionScreen(1); 
+            return;
+        }
+
+        if (currentQ.type === "options") {
+          if (state.selectedOption) {
+            state.answers[state.index] = state.selectedOption;
+            state.selectedOption = null;
+            transitionScreen(1);
+          }
+        } else {
+          // Handles text and email input
+          const inputValue = inputEl ? inputEl.value.trim() : '';
+
+          if (!inputValue) {
+            if (inputEl) {
+                inputEl.style.animation = "shake 0.5s";
+                setTimeout(() => inputEl.style.animation = "", 500);
+            }
+            displayValidationMessage("Please enter a value to continue.");
+            return;
+          }
+
+          // ** NEW: Email validation check **
+          if (currentQ.inputType === 'email' && !isValidEmail(inputValue)) {
+              if (inputEl) {
+                  inputEl.style.animation = "shake 0.5s";
+                  setTimeout(() => inputEl.style.animation = "", 500);
+              }
+              displayValidationMessage("Please enter a valid email address.");
+              return;
+          }
+
+          // If validation passes
+          state.answers[state.index] = inputValue;
+          transitionScreen(1);
+        }
+      }
+      
+      function handleBack() {
+          if (state.index > 0) {
+              // Ensure we re-load the answer if we go back to an options page
+              if (CONFIG.QUESTIONS[state.index - 1].type === 'options') {
+                  state.selectedOption = state.answers[state.index - 1];
+              }
+              transitionScreen(-1);
+          }
+      }
+
+      function transitionScreen(direction) {
+        const exitDir = direction > 0 ? "left" : "right";
+        const active = document.querySelector(".screen.active");
+        
+        if (active) {
+          active.classList.remove("active");
+          active.classList.add(`exit-${exitDir}`);
+          setTimeout(() => {
+            state.index += direction;
+            showScreen(state.index);
+          }, 600);
+        }
+      }
+
+      function setupInputEvents(inputEl) {
+        state.currentInput = inputEl;
+
+        inputEl.addEventListener("keydown", e => {
+          if (e.key === "Enter" && inputEl.tagName === 'INPUT') {
+            e.preventDefault();
+            handleNext();
+          }
+        });
+        setTimeout(() => inputEl.focus(), 100);
+      }
+      
+      function handleOptionClick(btn, option) {
+        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.selectedOption = option;
+        
+        // Auto-proceed after a brief moment
+        setTimeout(() => handleNext(), 300);
+      }
+
+      // =======================================================
+      // 6. RENDERERS
+      // =======================================================
+
+      function showScreen(i) {
+        const currentQ = CONFIG.QUESTIONS[i];
+
+        if (i >= CONFIG.QUESTIONS.length) {
+          // Final Results Screen
+          const bg = CONFIG.COLORS[Math.floor(Math.random() * CONFIG.COLORS.length)];
+          const textColor = getContrastColor(bg);
+          state.currentBg = bg;
+          document.body.style.background = bg;
+
+          const screen = document.createElement("div");
+          screen.className = "screen active layout-center";
+          screen.style.color = textColor;
+          
+          showResults(screen, textColor);
+          state.container.innerHTML = "";
+          state.container.appendChild(screen);
+          return;
+        }
+
+        // Question Screen Setup
+        const bg = CONFIG.COLORS[Math.floor(Math.random() * CONFIG.COLORS.length)];
         const textColor = getContrastColor(bg);
-        currentBg = bg;
+        state.currentBg = bg;
         document.body.style.background = bg;
 
         const screen = document.createElement("div");
-        screen.className = "screen active layout-center";
+        screen.className = `screen active layout-${currentQ.layout}`;
         screen.style.color = textColor;
-        
-        showResults(screen, textColor, bg);
-        container.innerHTML = "";
-        container.appendChild(screen);
-        return;
-      }
-
-      const bg = colors[Math.floor(Math.random() * colors.length)];
-      const textColor = getContrastColor(bg);
-      currentBg = bg;
-      document.body.style.background = bg;
-
-      const screen = document.createElement("div");
-      screen.className = `screen active layout-${questions[i].layout}`;
-      screen.style.color = textColor;
-        const progress = document.createElement("div");
-        progress.className = "progress";
-        progress.textContent = `${i + 1}/${questions.length}`;
-        screen.appendChild(progress);
-
-        // Add decoration
-        if (questions[i].decoration !== "none") {
-          screen.innerHTML += createDecoration(questions[i].decoration, textColor);
-        }
-
-        const questionText = document.createElement("div");
-        questionText.className = "question-text";
-        questionText.textContent = questions[i].q;
-        screen.appendChild(questionText);
-
-        if (questions[i].showBall) {
-          const ballSvg = document.createElement("div");
-          ballSvg.innerHTML = `
-            <svg id="bouncing-ball" viewBox="0 0 100 100">
-              <circle class="ball" cx="50" cy="70" r="15" fill="${textColor}"/>
-              <line x1="0" y1="90" x2="100" y2="90" stroke="${textColor}" stroke-width="2" opacity="0.3"/>
-            </svg>
-          `;
-          screen.appendChild(ballSvg);
-        }
-
-        if (questions[i].type === "options") {
-          const optionsGrid = document.createElement("div");
-          optionsGrid.className = "options-grid";
           
-          questions[i].options.forEach(option => {
-            const btn = document.createElement("button");
-            btn.className = "option-btn";
-            btn.textContent = option;
-            btn.style.borderColor = textColor;
-            btn.style.color = textColor;
-            btn.onclick = () => {
-              document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-              btn.classList.add('selected');
-              selectedOption = option;
-              setTimeout(() => handleNext(), 300);
-            };
-            optionsGrid.appendChild(btn);
-          });
+          // Progress Bar (Index 0 is Q1, Index 1 is Intro, so Q2 starts at Index 2)
+          let currentQNum = i; 
+          if (i > 1) { 
+            currentQNum = i - 1; // Subtract the Intro screen from the count
+          } 
           
-          screen.appendChild(optionsGrid);
-        } else {
-          const inputRow = document.createElement("div");
-          inputRow.className = "input-row";
-
-          const inputEl = document.createElement("input");
-          inputEl.type = questions[i].type === "email" ? "email" : "text";
-          inputEl.placeholder = questions[i].placeholder;
-          inputEl.style.color = textColor;
-          inputEl.style.borderColor = textColor;
-          if (answers[i]) inputEl.value = answers[i];
-          inputRow.appendChild(inputEl);
-
-          const btn = document.createElement("button");
-          btn.className = "btn";
-          btn.textContent = i === questions.length - 1 ? "Results" : "Next";
-          btn.style.borderColor = textColor;
-          btn.style.color = textColor;
-          btn.onclick = handleNext;
-          inputRow.appendChild(btn);
-
-          screen.appendChild(inputRow);
-          currentInput = inputEl;
-
-          inputEl.addEventListener("keydown", e => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleNext();
-            }
-          });
-
-          setTimeout(() => inputEl.focus(), 100);
-        }
-
-      container.innerHTML = "";
-      container.appendChild(screen);
-    }
-
-    function handleNext() {
-      if (questions[index].type === "options") {
-        if (selectedOption) {
-          answers[index] = selectedOption;
-          selectedOption = null;
-          transitionScreen();
-        }
-      } else {
-        if (currentInput && currentInput.value.trim()) {
-          answers[index] = currentInput.value.trim();
-          transitionScreen();
-        } else {
-          currentInput.style.animation = "shake 0.5s";
-          setTimeout(() => currentInput.style.animation = "", 500);
-        }
-      }
-    }
-
-    function transitionScreen() {
-      const directions = ["left", "right", "up", "down"];
-      const exitDir = directions[Math.floor(Math.random() * directions.length)];
-      const active = document.querySelector(".screen.active");
-      
-      if (active) {
-        active.classList.remove("active");
-        active.classList.add(`exit-${exitDir}`);
-        setTimeout(() => {
-          index++;
-          showScreen(index);
-        }, 600);
-      }
-    }
-
-    function showResults(screen, textColor, bg) {
-      screen.innerHTML += createDecoration("particles", textColor);
-      
-      const resultsDiv = document.createElement("div");
-      resultsDiv.className = "results";
-      resultsDiv.style.color = textColor;
-      resultsDiv.style.textAlign = "center";
-      resultsDiv.style.display = "flex";
-      resultsDiv.style.flexDirection = "column";
-      resultsDiv.style.justifyContent = "center";
-      resultsDiv.style.alignItems = "center";
-      resultsDiv.style.height = "100%";
-
-      const thankYouIcon = document.createElement("div");
-      thankYouIcon.style.fontSize = "4rem";
-      thankYouIcon.style.marginBottom = "2rem";
-      thankYouIcon.textContent = "🎉";
-      resultsDiv.appendChild(thankYouIcon);
-
-      const header = document.createElement("div");
-      header.className = "result-header";
-      header.textContent = "Results & Analysis";
-      resultsDiv.appendChild(header);
-
-      const message = document.createElement("div");
-      message.style.fontSize = "clamp(1.2rem, 3vw, 1.8rem)";
-      message.style.marginBottom = "2rem";
-      message.style.lineHeight = "1.6";
-      message.style.maxWidth = "600px";
-      message.style.opacity = "0.9";
-      message.textContent = "Your core responses have been recorded via the webhook. Now, let's generate your custom Code Culture Profile!";
-      resultsDiv.appendChild(message);
-
-      // Calculate personality for storage
-      const lastAnswer = answers[answers.length - 2].toLowerCase(); // -2 because last is email
-      let personality = "Creative-Techy Hybrid 🎨💻";
-      if (lastAnswer.includes("creative") && !lastAnswer.includes("techy")) {
-        personality = "Pure Creative 🎨";
-      } else if (lastAnswer.includes("techy") && !lastAnswer.includes("creative")) {
-        personality = "Pure Techy 💻";
-      } else if (lastAnswer.includes("both") || lastAnswer.includes("hybrid")) {
-        personality = "Creative-Techy Hybrid 🎨💻";
-      }
-      
-      // Save data (now using the provided Google Apps Script webhook)
-      saveResponses(personality);
-
-      // --- LLM GENERATION SECTION ---
-      
-      const analysisContainer = document.createElement("div");
-      analysisContainer.style.maxWidth = "700px";
-      analysisContainer.style.width = "100%";
-      analysisContainer.style.marginBottom = "2rem";
-      resultsDiv.appendChild(analysisContainer);
-
-      const llmButton = document.createElement("button");
-      llmButton.id = "generate-btn";
-      llmButton.className = "btn";
-      llmButton.innerHTML = "✨ Generate My Code Culture Profile";
-      llmButton.style.marginTop = "1rem";
-      analysisContainer.appendChild(llmButton);
-      
-      const profileOutput = document.createElement("div");
-      profileOutput.id = "profile-output";
-      profileOutput.style.marginTop = "2rem";
-      profileOutput.style.color = textColor;
-      profileOutput.style.background = `rgba(255, 255, 255, 0.1)`;
-      profileOutput.style.borderColor = textColor;
-      profileOutput.style.display = "none"; // Initially hidden
-      
-      analysisContainer.appendChild(profileOutput);
-
-      llmButton.onclick = () => {
-        llmButton.disabled = true;
-        llmButton.textContent = "Analyzing... Hang Tight!";
-        profileOutput.style.display = 'block';
-        profileOutput.innerHTML = '<p style="text-align: center;">Analyzing your answers... please wait...</p>';
-        generateCodeCultureProfile(personality, answers, questions, profileOutput, llmButton);
-      };
-      
-      // --- END LLM GENERATION SECTION ---
-
-      const restartBtn = document.createElement("button");
-      restartBtn.className = "btn";
-      restartBtn.textContent = "Take Survey Again";
-      restartBtn.style.borderColor = textColor;
-      restartBtn.style.color = textColor;
-      restartBtn.style.marginTop = "2rem";
-      restartBtn.onclick = () => {
-        index = 0;
-        answers = [];
-        sessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        transitionScreen();
-      };
-      resultsDiv.appendChild(restartBtn);
-
-      screen.appendChild(resultsDiv);
-    }
-
-    async function saveResponses(personality) {
-      try {
-        // --- NOTE: This URL is for your Google Apps Script webhook ---
-        // It has been updated to the latest URL you provided:
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxX7eAKpf_yU7hpAzT54Fq50koz6iiI_r4Cm-7D3mWmfopurulU15ZdK5FRgwfTn1A/exec'; 
-
-        const responseData = {
-          sessionId: sessionId,
-          timestamp: new Date().toISOString(),
-          personality: personality,
-          email: answers[answers.length - 1], // Last answer is email
-          answers: {}
-        };
-        
-        // Structure the answers object
-        questions.forEach((q, idx) => {
-          if (idx < questions.length - 1) { // Exclude email question from answers object
-            responseData.answers[`q${idx + 1}`] = {
-              question: q.q,
-              answer: answers[idx]
-            };
+          const progress = document.createElement("div");
+          progress.className = "progress";
+          progress.textContent = `Question ${currentQNum}/${ACTUAL_QUESTION_COUNT}`;
+          
+          // Only show progress on actual question screens (i > 0)
+          if (i > 0 && currentQ.type !== "intro") {
+             screen.appendChild(progress);
           }
-        });
 
-        // 2. Perform the fetch request to the webhook
-        // Added mode: 'no-cors' to prevent the browser from blocking the request due to CORS policy
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          mode: 'no-cors', // Critical for Apps Script webhooks to avoid preflight errors
-          body: JSON.stringify(responseData)
-        });
-        
-        // 3. Log the attempt. The response status check is unreliable in 'no-cors' mode.
-        console.log('Attempted to send response to Google Apps Script. Check Sheet for confirmation.');
-        
-        console.log('Response data payload:', responseData);
+          if (currentQ.decoration !== "none") {
+            screen.innerHTML += createDecoration(currentQ.decoration, textColor);
+          }
+          
+          const mainContent = document.createElement("div");
+          mainContent.style.maxWidth = "700px";
+          mainContent.style.width = "100%";
+          screen.appendChild(mainContent);
 
-      } catch (error) {
-        console.error('Error saving response (network issue or CORS):', error);
-      }
-    }
-
-    /**
-     * Helper function to call the Gemini API with exponential backoff.
-     */
-    async function fetchGemini(payload, maxRetries = 5, delay = 1000) {
-        // Use the API_KEY defined above, which uses the __api_key global variable.
-        const key = API_KEY;
-        if (!key) {
-            throw new Error("Gemini API key is missing. Cannot generate profile.");
-        }
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                const response = await fetch(GEMINI_API_URL + key, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    return await response.json();
-                }
-
-                // If not OK, but we can retry (e.g., rate limiting 429)
-                if (response.status === 429 || response.status >= 500) {
-                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-                    continue; // Retry
-                }
-
-                // For other errors, throw immediately (e.g., 403 Forbidden)
-                throw new Error(`API returned status code ${response.status}. Check API key and quota.`);
-
-            } catch (error) {
-                if (i === maxRetries - 1) throw error; // Re-throw on last attempt
-                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-            }
-        }
-        throw new Error("Failed to connect to Gemini API after multiple retries.");
-    }
-
-    /**
-     * Uses the Gemini API to analyze survey answers and generate a profile.
-     */
-    async function generateCodeCultureProfile(personality, answers, questions, outputElement, buttonElement) {
-        let prompt = `Analyze the following 7 responses from a user who completed a Code Culture survey. Based on their input, generate a concise, creative Code Culture Profile. The profile MUST start with a bold, unique title and then contain a brief (2-3 paragraph) analysis of their strengths, preferred work environment, and how they bridge the 'techy' vs 'creative' divide.
-
-        User's Self-Identified Type (Q7): ${personality}
-
-        --- Survey Responses ---
-        Q1: ${questions[0].q} -> Answer: ${answers[0]}
-        Q2: ${questions[1].q} -> Answer: ${answers[1]}
-        Q3: ${questions[2].q} -> Answer: ${answers[2]}
-        Q4: ${questions[3].q} -> Answer: ${answers[3]}
-        Q5: ${questions[4].q} -> Answer: ${answers[4]}
-        Q6: ${questions[5].q} -> Answer: ${answers[5]}
-        -----------------------
-
-        Format the output clearly using **markdown bolding** for the title and key points, and use line breaks for readability. Do not include the original questions or answers in the final profile.`;
-
-        const systemPrompt = "You are a 'Code Culture Analyst', a thoughtful AI specializing in identifying and describing professional personas at the intersection of technology and creativity. Your goal is to provide insightful, non-judgmental, and engaging personality profiles.";
-
-        const payload = {
-            contents: [{ parts: [{ text: prompt }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-        };
-
-        try {
-            const result = await fetchGemini(payload);
-            const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Analysis failed to generate a response.";
+          if (currentQ.type === "intro") {
+            // Render Introduction Screen
+            // Name is stored at index 0
+            const name = state.answers[0] ? state.answers[0].split(' ')[0] : 'there';
             
-            // Format markdown for HTML display (simple replacement)
-            const htmlContent = generatedText
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
-                .replace(/\n/g, '<br>'); // New lines
+            const welcomeHeader = document.createElement("div");
+            welcomeHeader.className = "result-header";
+            welcomeHeader.textContent = `Welcome, ${name}!`;
+            mainContent.appendChild(welcomeHeader);
 
-            outputElement.innerHTML = htmlContent;
-            buttonElement.innerHTML = '✨ Profile Generated!';
-        } catch (error) {
-            outputElement.innerHTML = `<p style="color: red; text-align: center;">Error: Could not generate profile. ${error.message}</p>`;
-            buttonElement.innerHTML = '✨ Retry Profile Generation';
-            buttonElement.disabled = false;
-        }
-    }
+            const introText = document.createElement("div");
+            introText.className = "intro-text";
+            introText.innerHTML = `This short survey is designed to explore the concepts of 'Creative' and 'Tech' cultures not through established rules, but through your personal opinion and approach to work. It's a way to define these concepts from several people's perspectives. <br><br>Your answers will be analyzed by an AI to provide a unique Code Culture Profile at the end.`;
+            mainContent.appendChild(introText);
+            
+            const introBtn = document.createElement("button");
+            introBtn.className = "btn";
+            introBtn.textContent = "Start Survey";
+            introBtn.style.borderColor = textColor;
+            introBtn.style.color = textColor;
+            introBtn.onclick = handleNext;
+            mainContent.appendChild(introBtn);
+            
+            // Add back button for intro screen (to go back to name input)
+            const navButtons = document.createElement("div");
+            navButtons.className = "nav-buttons";
+            navButtons.style.marginTop = "2rem";
 
-    showScreen(index);
+            const backBtn = document.createElement("button");
+            backBtn.id = "back-btn";
+            backBtn.className = "btn";
+            backBtn.textContent = "← Back";
+            backBtn.style.borderColor = textColor;
+            backBtn.style.color = textColor;
+            backBtn.onclick = handleBack;
+            navButtons.appendChild(backBtn);
+            
+            // Hide next button for alignment
+            const dummyBtn = document.createElement("button");
+            dummyBtn.className = "btn";
+            dummyBtn.style.opacity = 0;
+            dummyBtn.style.pointerEvents = 'none';
+            navButtons.appendChild(dummyBtn);
+            
+            mainContent.appendChild(navButtons);
+
+          } else {
+            // Render Question Screen
+            const questionText = document.createElement("div");
+            questionText.className = "question-text";
+            questionText.innerHTML = currentQ.q; 
+            mainContent.appendChild(questionText);
+
+            if (currentQ.showBall) {
+              const ballSvg = document.createElement("div");
+              ballSvg.innerHTML = `
+                <svg id="bouncing-ball" viewBox="0 0 100 100">
+                  <circle class="ball" cx="50" cy="70" r="15" fill="${textColor}"/>
+                  <line x1="0" y1="90" x2="100" y2="90" stroke="${textColor}" stroke-width="2" opacity="0.3"/>
+                </svg>
+              `;
+              mainContent.appendChild(ballSvg);
+            }
+
+            if (currentQ.type === "options") {
+              const optionsGrid = document.createElement("div");
+              optionsGrid.className = "options-grid";
+              
+              currentQ.options.forEach(option => {
+                const btn = document.createElement("button");
+                btn.className = "option-btn";
+                btn.textContent = option;
+                btn.style.borderColor = textColor;
+                btn.style.color = textColor;
+                btn.onclick = () => handleOptionClick(btn, option);
+                // Highlight selected option when going back
+                if (state.answers[i] === option) {
+                    btn.classList.add('selected');
+                    state.selectedOption = option;
+                }
+                optionsGrid.appendChild(btn);
+              });
+              
+              mainContent.appendChild(optionsGrid);
+              
+              // Add back button for options screen
+              const navButtons = document.createElement("div");
+              navButtons.className = "nav-buttons";
+              navButtons.style.marginTop = "2rem";
+
+              const backBtn = document.createElement("button");
+              backBtn.id = "back-btn";
+              backBtn.className = "btn";
+              backBtn.textContent = "← Back";
+              backBtn.style.borderColor = textColor;
+              backBtn.style.color = textColor;
+              backBtn.onclick = handleBack;
+              navButtons.appendChild(backBtn);
+              
+              const nextBtn = document.createElement("button");
+              nextBtn.id = "next-btn";
+              nextBtn.className = "btn";
+              nextBtn.textContent = i === CONFIG.QUESTIONS.length - 1 ? "Results" : "Next →";
+              nextBtn.style.borderColor = textColor;
+              nextBtn.style.color = textColor;
+              nextBtn.onclick = handleNext;
+              navButtons.appendChild(nextBtn);
+              
+              mainContent.appendChild(navButtons);
+
+            } else {
+              // Input/Textarea handling
+              const inputWrapper = document.createElement("div");
+              inputWrapper.className = "input-row";
+              inputWrapper.style.width = "100%";
+
+              const inputEl = document.createElement(currentQ.inputType === "textarea" ? "textarea" : "input");
+              inputEl.type = currentQ.inputType || "text";
+              inputEl.placeholder = currentQ.placeholder;
+              inputEl.style.color = textColor;
+
+              if (state.answers[i]) inputEl.value = state.answers[i];
+              inputWrapper.appendChild(inputEl);
+              
+              // Validation message placeholder
+              const msgEl = document.createElement('div');
+              msgEl.id = 'validation-msg';
+              msgEl.className = 'validation-message';
+              inputWrapper.appendChild(msgEl);
+
+              const navButtons = document.createElement("div");
+              navButtons.className = "nav-buttons";
+              navButtons.style.marginTop = "2rem";
+
+              // Back Button
+              const backBtn = document.createElement("button");
+              backBtn.id = "back-btn";
+              backBtn.className = "btn";
+              backBtn.textContent = "← Back";
+              backBtn.style.borderColor = textColor;
+              backBtn.style.color = textColor;
+              backBtn.onclick = handleBack;
+              navButtons.appendChild(backBtn);
+              
+              if (i === 0) backBtn.style.display = 'none';
+
+              // Next Button
+              const nextBtn = document.createElement("button");
+              nextBtn.id = "next-btn";
+              nextBtn.className = "btn";
+              nextBtn.textContent = i === CONFIG.QUESTIONS.length - 1 ? "Results" : "Next →";
+              nextBtn.style.borderColor = textColor;
+              nextBtn.style.color = textColor;
+              nextBtn.onclick = handleNext;
+              navButtons.appendChild(nextBtn);
+
+              mainContent.appendChild(inputWrapper);
+              mainContent.appendChild(navButtons);
+              setupInputEvents(inputEl);
+            }
+          }
+
+        state.container.innerHTML = "";
+        state.container.appendChild(screen);
+      }
+
+      function showResults(screen, textColor) {
+        screen.innerHTML += createDecoration("particles", textColor);
+        
+        const resultsDiv = document.createElement("div");
+        resultsDiv.className = "results";
+        resultsDiv.style.color = textColor;
+        resultsDiv.style.textAlign = "center";
+        resultsDiv.style.display = "flex";
+        resultsDiv.style.flexDirection = "column";
+        resultsDiv.style.justifyContent = "center";
+        resultsDiv.style.alignItems = "center";
+        resultsDiv.style.height = "100%";
+
+        const header = document.createElement("div");
+        header.className = "result-header";
+        header.textContent = "Results & Analysis";
+        resultsDiv.appendChild(header);
+
+        const message = document.createElement("div");
+        message.style.fontSize = "clamp(1.2rem, 3vw, 1.8rem)";
+        message.style.marginBottom = "2rem";
+        message.style.lineHeight = "1.6";
+        message.style.maxWidth = "600px";
+        message.style.opacity = "0.9";
+        message.textContent = "Your core responses have been recorded via the webhook. Now, let's generate your custom Code Culture Profile!";
+        resultsDiv.appendChild(message);
+
+        // Calculate personality for storage (Q10 is the personality self-type, which is state.answers[10])
+        const personality = state.answers[CONFIG.QUESTIONS.length - 2];
+        
+        saveResponses(personality);
+
+        // --- LLM GENERATION SECTION ---
+        
+        const analysisContainer = document.createElement("div");
+        analysisContainer.style.maxWidth = "700px";
+        analysisContainer.style.width = "100%";
+        analysisContainer.style.marginBottom = "2rem";
+        resultsDiv.appendChild(analysisContainer);
+
+        const llmButton = document.createElement("button");
+        llmButton.id = "generate-btn";
+        llmButton.className = "btn";
+        llmButton.innerHTML = "✨ Generate My Code Culture Profile";
+        llmButton.style.marginTop = "1rem";
+        analysisContainer.appendChild(llmButton);
+        
+        const profileOutput = document.createElement("div");
+        profileOutput.id = "profile-output";
+        profileOutput.style.marginTop = "2rem";
+        profileOutput.style.color = textColor;
+        profileOutput.style.background = `rgba(255, 255, 255, 0.1)`;
+        profileOutput.style.borderColor = textColor;
+        profileOutput.style.display = "none";
+        
+        analysisContainer.appendChild(profileOutput);
+
+        llmButton.onclick = () => {
+          llmButton.disabled = true;
+          llmButton.textContent = "Analyzing... Hang Tight!";
+          profileOutput.style.display = 'block';
+          profileOutput.innerHTML = '<p style="text-align: center;">Analyzing your answers... please wait...</p>';
+          generateCodeCultureProfile(personality, profileOutput, llmButton);
+        };
+        
+        // --- END LLM GENERATION SECTION ---
+
+        const restartBtn = document.createElement("button");
+        restartBtn.className = "btn";
+        restartBtn.textContent = "Take Survey Again";
+        restartBtn.style.borderColor = textColor;
+        restartBtn.style.color = textColor;
+        restartBtn.style.marginTop = "2rem";
+        restartBtn.onclick = () => {
+          state.index = 0; // Reset index to the first question (Name)
+          state.answers = [];
+          state.sessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+          showScreen(0); // Call showScreen directly instead of transition
+        };
+        resultsDiv.appendChild(restartBtn);
+
+        screen.appendChild(resultsDiv);
+      }
+      
+      // =======================================================
+      // 7. INITIALIZATION
+      // =======================================================
+
+      function init() {
+          // Initialize mouse trail listeners
+          document.addEventListener('mousemove', (e) => createTrail(e.clientX, e.clientY));
+          document.addEventListener('touchmove', (e) => {
+              const touch = e.touches[0];
+              createTrail(touch.clientX, touch.clientY);
+          });
+          
+          // Start the application
+          showScreen(state.index);
+      }
+
+      init();
+    })();
   </script>
 </body>
 </html>
