@@ -77,17 +77,24 @@
 
     .screen.layout-bottom {
       justify-content: flex-end;
+      align-items: flex-start; /* FIX: Content starts at left */
     }
 
-    /* REVERTED: Simple centering of everything inside the screen */
+    /* FIX: Centers the content block vertically and horizontally */
     .screen.layout-center {
       justify-content: center;
-      align-items: center;
-      text-align: center;
+      align-items: center; 
     }
+    
+    /* FIX: Layout center should center text for visual elements */
+    .layout-center .question-text {
+        text-align: center;
+    }
+
 
     .screen.layout-top-bottom {
       justify-content: space-between;
+      align-items: flex-start; /* FIX: Content starts at left */
     }
     
     .intro-text {
@@ -114,18 +121,15 @@
       }
     }
 
-    /* REVERTED: Centering text only in layout-center screens */
-    .layout-center .question-text {
-      text-align: center;
-      max-width: 700px;
-    }
-    
-    /* REVERTED: Removed main-content wrapper logic */
+    /* FIX: Ensures content blocks are max 700px and centered for better desktop reading */
     .main-content {
-        /* This selector is no longer used for structure, but is kept to prevent errors */
         max-width: 700px; 
         width: 100%;
-        margin: 0 auto;
+        margin: 0; 
+    }
+    
+    .layout-center .main-content {
+        margin: 0 auto; /* Center main content only in layout-center */
     }
 
 
@@ -325,6 +329,13 @@
         margin: 2rem 0;
       }
     }
+    
+    /* FIX: Ensure option grid is centered on center layouts */
+    .layout-center .options-grid {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
 
     .option-btn {
       padding: 1.2rem 1rem;
@@ -521,7 +532,9 @@
         COLORS: ["#17072b", "#172d67", "#22ddd2", "#2e73ea", "#8c15e9"],
         WEBHOOK_URL: 'https://script.google.com/macros/s/AKfycbxX7eAKpf_yU7hpAzT54Fq50koz6iiI_r4Cm-7D3mWmfopurulU15ZdK5FRgwfTn1A/exec',
         GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=',
+        // --- FIX --- PASTE YOUR API KEY HERE FOR LOCAL TESTING (KEEP EMPTY FOR CANVAS)
         API_KEY: typeof __api_key !== 'undefined' ? __api_key : "", 
+        // -----------
         QUESTIONS: [
           // Index 0: Q1. Identity (Input)
           { q: "What is your name?", qIndex: 1, type: "input", inputType: "text", layout: "bottom", placeholder: "e.g., Jane Doe", decoration: "particles" },
