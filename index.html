@@ -79,6 +79,7 @@
       justify-content: flex-end;
     }
 
+    /* REVERTED: Simple centering of everything inside the screen */
     .screen.layout-center {
       justify-content: center;
       align-items: center;
@@ -113,17 +114,18 @@
       }
     }
 
+    /* REVERTED: Centering text only in layout-center screens */
     .layout-center .question-text {
       text-align: center;
       max-width: 700px;
     }
     
-    /* Main Content Wrapper for Responsiveness */
+    /* REVERTED: Removed main-content wrapper logic */
     .main-content {
-        max-width: 700px;
+        /* This selector is no longer used for structure, but is kept to prevent errors */
+        max-width: 700px; 
         width: 100%;
-        /* Centers content when not filling the width */
-        margin: 0 auto; 
+        margin: 0 auto;
     }
 
 
