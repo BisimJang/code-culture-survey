@@ -12,7 +12,7 @@
     }
     
     body {
-      overflow: hidden; /* Hide main body scrollbar */
+      overflow: hidden;
       font-family: 'Space Grotesk', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
       transition: background 0.8s ease;
       height: 100vh;
@@ -22,13 +22,12 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Scrollbar aesthetics for the results page only (webkit specific) */
     .screen::-webkit-scrollbar {
-        width: 0; /* Hide scrollbar for Chrome, Safari and Opera */
+        width: 0;
     }
     .screen {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
         position: absolute;
         width: 100%;
         height: 100%;
@@ -38,10 +37,9 @@
         opacity: 0;
         transition: all 0.8s ease;
         transform: translateX(100%);
-        overflow-y: auto; /* Allows content on screen to scroll if needed */
+        overflow-y: auto;
         overflow-x: hidden;
     }
-
 
     .cursor-trail {
       position: fixed;
@@ -77,24 +75,21 @@
 
     .screen.layout-bottom {
       justify-content: flex-end;
-      align-items: flex-start; /* FIX: Content starts at left */
+      align-items: flex-start;
     }
 
-    /* FIX: Centers the content block vertically and horizontally */
     .screen.layout-center {
       justify-content: center;
       align-items: center; 
     }
     
-    /* FIX: Layout center should center text for visual elements */
     .layout-center .question-text {
         text-align: center;
     }
 
-
     .screen.layout-top-bottom {
       justify-content: space-between;
-      align-items: flex-start; /* FIX: Content starts at left */
+      align-items: flex-start;
     }
     
     .intro-text {
@@ -121,7 +116,6 @@
       }
     }
 
-    /* FIX: Ensures content blocks are max 700px and centered for better desktop reading */
     .main-content {
         max-width: 700px; 
         width: 100%;
@@ -129,9 +123,8 @@
     }
     
     .layout-center .main-content {
-        margin: 0 auto; /* Center main content only in layout-center */
+        margin: 0 auto;
     }
-
 
     .input-row {
       display: flex;
@@ -170,12 +163,11 @@
       min-width: 0;
     }
     
-    /* Input and Textarea Styling */
     .input-row input[type="text"], 
     .input-row input[type="email"], 
     .input-row textarea {
         flex: 1;
-        padding: 1rem 0; /* Match single-line padding */
+        padding: 1rem 0;
         font-size: clamp(0.95rem, 3vw, 1.3rem);
         font-family: inherit;
         background: transparent;
@@ -188,33 +180,31 @@
     .input-row textarea {
         padding: 1rem;
         border: none;
-        border-bottom: 3px solid currentColor; /* Use same bottom border style */
-        min-height: 3em; /* Minimal height, allows natural growth */
-        resize: none; /* Prevent manual resize */
-        overflow-y: hidden; /* Hide scrollbar, let content push element height */
+        border-bottom: 3px solid currentColor;
+        min-height: 3em;
+        resize: none;
+        overflow-y: hidden;
     }
 
     .input-row input[type="text"]:focus, 
     .input-row input[type="email"]:focus, 
     .input-row textarea:focus {
       border-bottom-width: 5px;
-      border-color: #22ddd2; /* Subtle focus color change */
+      border-color: #22ddd2;
       box-shadow: none;
     }
-
 
     input::placeholder, .input-row textarea::placeholder {
       color: inherit;
       opacity: 0.5;
     }
 
-    /* Button Group for Navigation */
     .nav-buttons {
         display: flex;
         gap: 1rem;
         margin-top: 1rem;
-        width: 100%; /* Fill the main content width */
-        max-width: 400px; /* Optional: Constrain on desktop for better feel */
+        width: 100%;
+        max-width: 400px;
         margin-left: auto;
         margin-right: auto;
     }
@@ -224,7 +214,6 @@
             max-width: 100%;
         }
     }
-
 
     .btn {
       padding: 1rem 2rem;
@@ -241,10 +230,9 @@
       white-space: nowrap;
       position: relative;
       overflow: hidden;
-      flex: 1; /* Make both next/back buttons take equal space */
+      flex: 1;
     }
     
-    /* Notification message for invalid input */
     .validation-message {
         color: #ff3860;
         font-size: 0.9rem;
@@ -255,7 +243,6 @@
         width: 100%;
     }
 
-    /* Back button specific styling */
     #back-btn {
         opacity: 0.7;
         transition: opacity 0.3s ease;
@@ -266,9 +253,8 @@
         transform: scale(1.02);
     }
     #back-btn::before {
-        content: none !important; /* Remove hover background fill */
+        content: none !important;
     }
-
 
     @media (min-width: 640px) {
       .btn {
@@ -330,12 +316,10 @@
       }
     }
     
-    /* FIX: Ensure option grid is centered on center layouts */
     .layout-center .options-grid {
         margin-left: auto;
         margin-right: auto;
     }
-
 
     .option-btn {
       padding: 1.2rem 1rem;
@@ -397,6 +381,7 @@
       width: 200px;
       height: 200px;
       margin: 1.5rem auto;
+      display: block;
     }
 
     @media (min-width: 768px) {
@@ -435,9 +420,8 @@
         border-radius: 8px;
         font-size: 0.9rem;
         text-align: left;
-        display: none; /* Initially hidden */
+        display: none;
     }
-
 
     .result-header {
       font-size: clamp(2.5rem, 6vw, 4rem);
@@ -525,75 +509,40 @@
 
   <script>
     (function() {
-      // =======================================================
-      // 1. CONFIGURATION
-      // =======================================================
       const CONFIG = {
         COLORS: ["#17072b", "#172d67", "#22ddd2", "#2e73ea", "#8c15e9"],
         WEBHOOK_URL: 'https://script.google.com/macros/s/AKfycbxX7eAKpf_yU7hpAzT54Fq50koz6iiI_r4Cm-7D3mWmfopurulU15ZdK5FRgwfTn1A/exec',
         GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=',
-        // --- FIX --- PASTE YOUR API KEY HERE FOR LOCAL TESTING (KEEP EMPTY FOR CANVAS)
-        API_KEY: typeof __api_key !== 'undefined' ? __api_key : "", 
-        // -----------
+        // PASTE YOUR GEMINI API KEY HERE BETWEEN THE QUOTES:
+        API_KEY: "",
         QUESTIONS: [
-          // Index 0: Q1. Identity (Input)
           { q: "What is your name?", qIndex: 1, type: "input", inputType: "text", layout: "bottom", placeholder: "e.g., Jane Doe", decoration: "particles" },
-
-          // Index 1: Welcome/Introduction Screen (After name is captured)
           { q: "Welcome", type: "intro", layout: "center", decoration: "particles" },
-          
-          // Index 2: Q2. Core Concepts
           { q: "What do you define as a creative?", qIndex: 2, type: "input", inputType: "textarea", layout: "top-bottom", placeholder: "Express your understanding of creativity...", decoration: "wave" },
-          
-          // Index 3: Q3. Core Concepts (Was Q4)
           { q: "What would make a person tech-based in your opinion?", qIndex: 3, type: "input", inputType: "textarea", layout: "top-bottom", placeholder: "What qualities define a 'techy' person?", decoration: "particles" },
-          
-          // Index 4: Q4. Process & Impulse (Was Q5)
           { q: "When you see a new idea, what's your first instinct?", qIndex: 4, type: "options", layout: "center", options: ["How does it work?", "What does it mean?", "How could it be better?"], decoration: "grid" },
-          
-          // Index 5: Q5. Process & Impulse (Was Q6)
           { q: "What is your primary medium of work?", qIndex: 5, type: "input", inputType: "text", layout: "bottom", placeholder: "e.g., Code (VS Code), Design (Figma), Words (Markdown), Visuals (Canva)", decoration: "particles" },
-          
-          // Index 6: Q6. Preference & Reflection (Was Q8)
           { q: "How do you prefer to work?", qIndex: 6, type: "options", layout: "bottom", options: ["Solo deep focus", "Collaborative chaos", "Structured sprints", "Flow state freestyle"], decoration: "wave" },
-          
-          // Index 7: Q7. Preference & Reflection (Was Q9)
           { q: "Imagine a ball bouncing — what's the first thing you'd change?", qIndex: 7, type: "input", inputType: "text", layout: "center", placeholder: "I'd change the...", showBall: true, decoration: "none" },
-          
-          // Index 8: Q8. Preference & Reflection (Was Q10)
           { q: "Do you enjoy brainstorming ideas or executing them more?", qIndex: 8, type: "options", layout: "center", options: ["Brainstorming ideas (Planning)", "Executing them (Doing)"], decoration: "wave" },
-          
-          // Index 9: Q9. Final Reflection (Was Q11)
           { q: "If you could create anything without limitation, what would it be?", qIndex: 9, type: "input", inputType: "textarea", layout: "top-bottom", placeholder: "Describe your ideal project...", decoration: "grid" },
-          
-          // Index 10: Q10. Outcome & Contact (Was Q12)
           { q: "Based on your answers, would you call yourself:", qIndex: 10, type: "options", layout: "center", options: ["A Creative", "A Tech Person", "A Blend of Both", "Still Exploring"], decoration: "particles" },
-          
-          // Index 11: Email (Was Q13)
           { q: "What is your email?", qIndex: 11, type: "email", inputType: "email", layout: "bottom", placeholder: "your@email.com", decoration: "wave" }
         ],
       };
 
-      // The actual question count (for the progress bar) is 10 (Q1-Q10).
-      const ACTUAL_QUESTION_COUNT = 10; 
+      const ACTUAL_QUESTION_COUNT = 10;
 
-      // =======================================================
-      // 2. STATE MANAGEMENT
-      // =======================================================
       const state = {
         container: document.getElementById("form-container"),
         index: 0,
-        answers: [], // Stores all answers including Q1 (name)
+        answers: [],
         selectedOption: null,
         currentInput: null,
         currentBg: CONFIG.COLORS[0],
         sessionId: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
         lastTrailTime: 0,
       };
-
-      // =======================================================
-      // 3. UTILITY FUNCTIONS
-      // =======================================================
 
       function getContrastColor(hex) {
         hex = hex.replace("#", "");
@@ -644,24 +593,13 @@
         return "";
       }
       
-      /**
-       * Simple regex to validate basic email format.
-       */
       function isValidEmail(email) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           return emailRegex.test(email);
       }
 
-      // =======================================================
-      // 4. API HANDLERS (Webhook & Gemini)
-      // =======================================================
-
-      /**
-       * Sends survey responses to the Google Apps Script webhook.
-       */
       async function saveResponses(personality) {
         try {
-          // Get name from the answer to Q1 (index 0 in CONFIG.QUESTIONS)
           const name = state.answers[0] || 'Guest';
 
           const responseData = {
@@ -669,11 +607,10 @@
             timestamp: new Date().toISOString(),
             name: name,
             personality: personality,
-            email: state.answers[CONFIG.QUESTIONS.length - 1], // Last answer is email
+            email: state.answers[CONFIG.QUESTIONS.length - 1],
             answers: {}
           };
           
-          // Iterate over actual questions (index 0 through length - 2) excluding the intro screen (Index 1)
           CONFIG.QUESTIONS.forEach((q, idx) => {
             if (q.type !== 'intro' && idx < CONFIG.QUESTIONS.length - 1) { 
                 responseData.answers[`q${q.qIndex}`] = {
@@ -683,7 +620,6 @@
             }
           });
 
-          // Use mode: 'no-cors' to bypass the CORS header issue, but suppresses response checks.
           const response = await fetch(CONFIG.WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -692,21 +628,16 @@
           });
           
           console.log('Attempted to send response to Google Apps Script. Check Sheet for confirmation.');
-          console.log('Response data payload:', responseData);
 
         } catch (error) {
-          console.error('Error saving response (network issue or CORS):', error);
+          console.error('Error saving response:', error);
         }
       }
 
-      /**
-       * Helper function to call the Gemini API with exponential backoff.
-       */
       async function fetchGemini(payload, maxRetries = 5, delay = 1000) {
-          const key = CONFIG.API_KEY;
+          const key = CONFIG.API_KEY.trim();
           if (!key) {
-              // Throw custom error for display on the result screen
-              throw new Error("Gemini API key is missing. Cannot generate profile.");
+              throw new Error("Gemini API key is missing. Please add your API key to the CONFIG.API_KEY constant in the code.");
           }
           for (let i = 0; i < maxRetries; i++) {
               try {
@@ -735,20 +666,14 @@
           throw new Error("Failed to connect to Gemini API after multiple retries.");
       }
 
-      /**
-       * Uses the Gemini API to analyze survey answers and generate a profile.
-       */
       async function generateCodeCultureProfile(personality, outputElement, buttonElement) {
           const name = state.answers[0] || 'Coder';
           
-          // Collects answers only from Q2 up to Q10 (indices 2 through length - 3)
           const surveyAnswers = CONFIG.QUESTIONS.slice(2, CONFIG.QUESTIONS.length - 2).map((q, idx) => {
-              // Index for answers is 2 + current slice index
               const answerIndex = idx + 2; 
               const answerText = state.answers[answerIndex];
               return `Q${q.qIndex}: ${q.q} -> Answer: ${answerText}`;
           }).join('\n');
-
 
           let prompt = `Analyze the following ${ACTUAL_QUESTION_COUNT - 2} responses from a user named ${name} who completed a Code Culture survey. Based on their input, generate a concise, creative Code Culture Profile. The profile MUST start with a strong, unique title and then contain a brief (2-3 paragraph) analysis of their strengths, preferred work environment, and how they bridge the 'techy' vs 'creative' divide.
 
@@ -777,7 +702,7 @@
           } catch (error) {
               outputElement.innerHTML = `<p style="color: red; text-align: center;">Error: Could not generate profile. ${error.message}</p>`;
               
-              if (error.message.includes("Gemini API key is missing")) {
+              if (error.message.includes("API key is missing")) {
                   const banner = document.getElementById('api-fix-banner');
                   if (banner) banner.style.display = 'block';
               }
@@ -786,10 +711,6 @@
               buttonElement.disabled = false;
           }
       }
-
-      // =======================================================
-      // 5. UI / NAVIGATION
-      // =======================================================
 
       function displayValidationMessage(message) {
           const inputRow = document.querySelector('.input-row');
@@ -810,7 +731,6 @@
         const currentQ = CONFIG.QUESTIONS[state.index];
         let inputEl = document.querySelector('input[type="text"], input[type="email"], textarea');
         
-        // Handle Intro screen
         if (currentQ.type === "intro") {
             transitionScreen(1); 
             return;
@@ -823,7 +743,6 @@
             transitionScreen(1);
           }
         } else {
-          // Handles text and email input
           const inputValue = inputEl ? inputEl.value.trim() : '';
 
           if (!inputValue) {
@@ -835,7 +754,6 @@
             return;
           }
 
-          // ** NEW: Email validation check **
           if (currentQ.inputType === 'email' && !isValidEmail(inputValue)) {
               if (inputEl) {
                   inputEl.style.animation = "shake 0.5s";
@@ -845,7 +763,6 @@
               return;
           }
 
-          // If validation passes
           state.answers[state.index] = inputValue;
           transitionScreen(1);
         }
@@ -853,7 +770,6 @@
       
       function handleBack() {
           if (state.index > 0) {
-              // Ensure we re-load the answer if we go back to an options page
               if (CONFIG.QUESTIONS[state.index - 1].type === 'options') {
                   state.selectedOption = state.answers[state.index - 1];
               }
@@ -892,19 +808,13 @@
         btn.classList.add('selected');
         state.selectedOption = option;
         
-        // Auto-proceed after a brief moment
         setTimeout(() => handleNext(), 300);
       }
-
-      // =======================================================
-      // 6. RENDERERS
-      // =======================================================
 
       function showScreen(i) {
         const currentQ = CONFIG.QUESTIONS[i];
 
         if (i >= CONFIG.QUESTIONS.length) {
-          // Final Results Screen
           const bg = CONFIG.COLORS[Math.floor(Math.random() * CONFIG.COLORS.length)];
           const textColor = getContrastColor(bg);
           state.currentBg = bg;
@@ -920,7 +830,6 @@
           return;
         }
 
-        // Question Screen Setup
         const bg = CONFIG.COLORS[Math.floor(Math.random() * CONFIG.COLORS.length)];
         const textColor = getContrastColor(bg);
         state.currentBg = bg;
@@ -930,17 +839,15 @@
         screen.className = `screen active layout-${currentQ.layout}`;
         screen.style.color = textColor;
           
-          // Progress Bar (Index 0 is Q1, Index 1 is Intro, so Q2 starts at Index 2)
           let currentQNum = i; 
           if (i > 1) { 
-            currentQNum = i - 1; // Subtract the Intro screen from the count
+            currentQNum = i - 1;
           } 
           
           const progress = document.createElement("div");
           progress.className = "progress";
           progress.textContent = `Question ${currentQNum}/${ACTUAL_QUESTION_COUNT}`;
           
-          // Only show progress on actual question screens (i > 0)
           if (i > 0 && currentQ.type !== "intro") {
              screen.appendChild(progress);
           }
@@ -954,8 +861,6 @@
           screen.appendChild(mainContent);
 
           if (currentQ.type === "intro") {
-            // Render Introduction Screen
-            // Name is stored at index 0
             const name = state.answers[0] ? state.answers[0].split(' ')[0] : 'there';
             
             const welcomeHeader = document.createElement("div");
@@ -976,7 +881,6 @@
             introBtn.onclick = handleNext;
             mainContent.appendChild(introBtn);
             
-            // Add back button for intro screen (to go back to name input)
             const navButtons = document.createElement("div");
             navButtons.className = "nav-buttons";
             navButtons.style.marginTop = "2rem";
@@ -990,7 +894,6 @@
             backBtn.onclick = handleBack;
             navButtons.appendChild(backBtn);
             
-            // Hide next button for alignment
             const dummyBtn = document.createElement("button");
             dummyBtn.className = "btn";
             dummyBtn.style.opacity = 0;
@@ -1000,7 +903,6 @@
             mainContent.appendChild(navButtons);
 
           } else {
-            // Render Question Screen
             const questionText = document.createElement("div");
             questionText.className = "question-text";
             questionText.innerHTML = currentQ.q; 
@@ -1031,7 +933,6 @@
                 btn.style.borderColor = textColor;
                 btn.style.color = textColor;
                 btn.onclick = () => handleOptionClick(btn, option);
-                // Highlight selected option when going back
                 if (state.answers[i] === option) {
                     btn.classList.add('selected');
                     state.selectedOption = option;
@@ -1041,7 +942,6 @@
               
               mainContent.appendChild(optionsGrid);
               
-              // Add back button for options screen
               const navButtons = document.createElement("div");
               navButtons.className = "nav-buttons";
               navButtons.style.marginTop = "2rem";
@@ -1067,7 +967,6 @@
               mainContent.appendChild(navButtons);
 
             } else {
-              // Input/Textarea handling
               const inputWrapper = document.createElement("div");
               inputWrapper.className = "input-row";
               inputWrapper.style.width = "100%";
@@ -1080,7 +979,6 @@
               if (state.answers[i]) inputEl.value = state.answers[i];
               inputWrapper.appendChild(inputEl);
               
-              // Validation message placeholder
               const msgEl = document.createElement('div');
               msgEl.id = 'validation-msg';
               msgEl.className = 'validation-message';
@@ -1090,7 +988,6 @@
               navButtons.className = "nav-buttons";
               navButtons.style.marginTop = "2rem";
 
-              // Back Button
               const backBtn = document.createElement("button");
               backBtn.id = "back-btn";
               backBtn.className = "btn";
@@ -1102,7 +999,6 @@
               
               if (i === 0) backBtn.style.display = 'none';
 
-              // Next Button
               const nextBtn = document.createElement("button");
               nextBtn.id = "next-btn";
               nextBtn.className = "btn";
@@ -1149,12 +1045,9 @@
         message.textContent = "Your core responses have been recorded via the webhook. Now, let's generate your custom Code Culture Profile!";
         resultsDiv.appendChild(message);
 
-        // Calculate personality for storage (Q10 is the personality self-type, which is state.answers[10])
         const personality = state.answers[CONFIG.QUESTIONS.length - 2];
         
         saveResponses(personality);
-
-        // --- LLM GENERATION SECTION ---
         
         const analysisContainer = document.createElement("div");
         analysisContainer.style.maxWidth = "700px";
@@ -1169,13 +1062,12 @@
         llmButton.style.marginTop = "1rem";
         analysisContainer.appendChild(llmButton);
         
-        // API Key missing banner
         const apiBanner = document.createElement("div");
         apiBanner.id = "api-fix-banner";
         apiBanner.className = "api-error-banner";
         apiBanner.style.color = textColor;
         apiBanner.innerHTML = `
-            ⚠️ **API Key Missing:** The profile generation is likely blocked. If you are running this locally (not in Canvas), please paste your Gemini API key into the 'API_KEY' constant in the code to fix this.
+            ⚠️ <strong>API Key Missing:</strong> Please add your Gemini API key to the CONFIG.API_KEY constant at the top of the script (line 22). Get a free key at <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: #22ddd2;">Google AI Studio</a>.
         `;
         analysisContainer.appendChild(apiBanner);
 
@@ -1196,8 +1088,6 @@
           profileOutput.innerHTML = '<p style="text-align: center;">Analyzing your answers... please wait...</p>';
           generateCodeCultureProfile(personality, profileOutput, llmButton);
         };
-        
-        // --- END LLM GENERATION SECTION ---
 
         const restartBtn = document.createElement("button");
         restartBtn.className = "btn";
@@ -1206,34 +1096,27 @@
         restartBtn.style.color = textColor;
         restartBtn.style.marginTop = "2rem";
         restartBtn.onclick = () => {
-          state.index = 0; // Reset index to the first question (Name)
+          state.index = 0;
           state.answers = [];
           state.sessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-          showScreen(0); // Call showScreen directly instead of transition
+          showScreen(0);
         };
         resultsDiv.appendChild(restartBtn);
 
         screen.appendChild(resultsDiv);
         
-        // Check API Key immediately and display banner if missing
-        if (!CONFIG.API_KEY) {
+        if (!CONFIG.API_KEY.trim()) {
             apiBanner.style.display = 'block';
         }
       }
-      
-      // =======================================================
-      // 7. INITIALIZATION
-      // =======================================================
 
       function init() {
-          // Initialize mouse trail listeners
           document.addEventListener('mousemove', (e) => createTrail(e.clientX, e.clientY));
           document.addEventListener('touchmove', (e) => {
               const touch = e.touches[0];
               createTrail(touch.clientX, touch.clientY);
           });
           
-          // Start the application
           showScreen(state.index);
       }
 
