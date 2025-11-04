@@ -4,7 +4,7 @@
 // The Gemini API Key MUST be stored as an environment variable in your Vercel project settings
 // named GEMINI_API_KEY.
 
-const API_KEY = process.env.GEMINI_API_KEY;
+const API_KEY = "AIzaSyAqNcfQWSYyufS8Z2j732rxJupHRSt0u_M";
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=';
 
 /**
