@@ -1008,6 +1008,7 @@
 
             if (currentQ.showBall) {
               const ballSvg = document.createElement("div");
+              mainContent.style.textAlign = 'center';
               ballSvg.innerHTML = `
                 <svg id="bouncing-ball" viewBox="0 0 100 100">
                   <circle class="ball" cx="50" cy="70" r="15" fill="${textColor}"/>
